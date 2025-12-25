@@ -1,0 +1,10 @@
+# Node modules (client & server)
+node_modules/
+
+# Environment files (any folder)
+.env
+.env.*
+
+# Build folders
+dist/
+build/
