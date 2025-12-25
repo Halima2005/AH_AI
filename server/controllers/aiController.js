@@ -23,7 +23,7 @@ export const generateArticle = async (req, res) => {
       return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
     }
 
-    const content = await generateWithCloudflare(prompt, length || 500);
+    const content = await generateWithCloudflare(prompt,text);
 
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)
@@ -57,10 +57,7 @@ export const generateBlogTitle = async (req, res) => {
       return res.json({ success: false, message: "Limit reached. Upgrade to continue" });
     }
 
-    const content = await generateWithCloudflare(
-      `Generate 5 SEO friendly blog titles for: ${prompt}`,
-      150
-    );
+    const content = await generateWithCloudflare(prompt, "title");
 
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)

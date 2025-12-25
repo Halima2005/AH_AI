@@ -1,35 +1,38 @@
-export const generateWithCloudflare = async (prompt, maxTokens = 500) => {
-  const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
-  const API_TOKEN = process.env.CF_AI_TOKEN;
+export const generateWithCloudflare = async (
+  prompt,
+  type = "text" // "text" | "title" | "image"
+) => {
+  const WORKER_URL = process.env.CLOUDFLARE_AI_WORKER_URL;
 
-  if (!ACCOUNT_ID || !API_TOKEN) {
-    throw new Error("Cloudflare credentials missing");
+  if (!WORKER_URL) {
+    throw new Error("Cloudflare AI Worker URL missing");
   }
 
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: "You are a helpful article writer." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: maxTokens,
-      }),
-    }
-  );
+  const response = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      type,
+      prompt
+    })
+  });
 
-  const result = await response.json();
+  const contentType = response.headers.get("content-type");
 
-  if (!result.success) {
-    console.error(result);
-    throw new Error("Cloudflare AI authentication failed");
+  // 🖼️ IMAGE RESPONSE
+  if (contentType && contentType.includes("image")) {
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer); // return image buffer
   }
 
-  return result.result.response;
+  // 📝 TEXT / TITLE RESPONSE
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || "AI Worker failed");
+  }
+
+  return data.result.response;
 };
